@@ -130,8 +130,16 @@ export default function EmployeeForm({
   const validate = () => {
     if (!firstName.trim()) return "First name required";
     if (!lastName.trim()) return "Last name required";
-    if (email && !/^\S+@\S+\.\S+$/.test(email)) return "Invalid email";
-    if (phone && !/^\+?[0-9\s-]{6,20}$/.test(phone)) return "Invalid phone";
+
+    if (email && !/^\S+@\S+\.\S+$/.test(email))
+      return "Invalid email";
+
+    // 🔹 Phone: if entered, must be exactly 10 digits
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !/^[0-9]{10}$/.test(trimmedPhone)) {
+      return "Phone must be exactly 10 digits";
+    }
+
     return null;
   };
 
