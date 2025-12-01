@@ -1,11 +1,12 @@
 // src/api/employeeApi.ts
 import api from "./axios";
 
+// What the frontend should work with:
 export interface EmployeeView {
   id: number;
-  name: string;
   firstName?: string;
   lastName?: string;
+  name?: string;               // used as fallback only
   email?: string;
   phone?: string;
   departmentId?: number;
@@ -15,46 +16,46 @@ export interface EmployeeView {
   raw?: any;
 }
 
+// What we get from backend (varies)
 type BackendEmployee = Record<string, any>;
 
 function mapBackendToFrontend(e: BackendEmployee): EmployeeView {
   const id = e.EmployeeId ?? e.employeeId ?? e.id ?? 0;
 
-  // try server full name first
-  // const fullFromServer = (e.FullName ?? e.fullname ?? e.Name ?? e.name ?? "").toString().trim();
-  const first = (e.FirstName ?? e.first_name ?? e.first ?? e.firstName ?? "").toString().trim();
-  const last  = (e.LastName  ?? e.last_name  ?? e.last  ?? e.lastName  ?? "").toString().trim();
+  const first = (e.FirstName ?? e.firstName ?? e.first ?? "").toString().trim();
+  const last = (e.LastName ?? e.lastName ?? e.last ?? "").toString().trim();
 
-  const nameFromParts = (first || last) ? `${first} ${last}`.trim() : "";
-  const emailStr = (e.Email ?? e.email ?? "").toString().trim();
-  const fromEmail = emailStr.includes("@") ? emailStr.split("@")[0] : emailStr;
+  // 🟢 Build full name only from first + last
+  const nameFromParts =
+    (first || last ? `${first} ${last}`.trim() : "") || undefined;
 
-  // name priority: server full > first+last > email username > "Employee <id>"
-  const name =  nameFromParts || fromEmail || (id ? `Employee ${id}` : "Unknown");
+  // 🛑 REMOVED email username based fallback ❌
+  const name =
+    nameFromParts || (id ? `Employee ${id}` : "Unknown");
 
   return {
     id,
-    name,
     firstName: first || undefined,
     lastName: last || undefined,
+    name,
     email: e.Email ?? e.email ?? undefined,
     phone: e.PhoneNo ?? e.phoneNo ?? e.Phone ?? e.phone ?? undefined,
     departmentId: e.DepartmentId ?? e.departmentId ?? undefined,
     departmentName: e.DepartmentName ?? e.departmentName ?? undefined,
     jobRole: e.JobRole ?? e.jobRole ?? undefined,
     gender: e.Gender ?? e.gender ?? undefined,
-    raw: e,
+    raw: e, // debugging if needed
   };
 }
 
 export async function getEmployees(): Promise<EmployeeView[]> {
   const resp = await api.get<BackendEmployee[]>("/api/Employee");
-  // debug: uncomment if you need to inspect raw:
-  // console.log("RAW /api/Employee:", resp.data?.slice?.(0,10));
   return (resp.data ?? []).map(mapBackendToFrontend);
 }
 
-export async function getEmployeeById(id: number): Promise<EmployeeView> {
+export async function getEmployeeById(
+  id: number
+): Promise<EmployeeView> {
   const resp = await api.get<BackendEmployee>(`/api/Employee/${id}`);
   return mapBackendToFrontend(resp.data ?? {});
 }
@@ -77,6 +78,7 @@ export async function createEmployee(payload: {
     JobRole: payload.jobRole,
     Gender: payload.gender,
   };
+
   const resp = await api.post("/api/User/AddEmployee", body);
   return resp?.data ? mapBackendToFrontend(resp.data) : null;
 }
@@ -94,6 +96,7 @@ export async function updateEmployee(
   }
 ): Promise<EmployeeView | null> {
   const body: any = {};
+
   if (payload.firstName !== undefined) body.FirstName = payload.firstName;
   if (payload.lastName !== undefined) body.LastName = payload.lastName;
   if (payload.email !== undefined) body.Email = payload.email;

@@ -177,3 +177,18 @@
   color: #065f46;
   border: 1px solid #6ee7b7;
 }
+.count-pill {
+  margin-right: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #eef2ff;        /* soft indigo-ish */
+  color: #1e3a8a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(148, 163, 184, 0.45);
+}

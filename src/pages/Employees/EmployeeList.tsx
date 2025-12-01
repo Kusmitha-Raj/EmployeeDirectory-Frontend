@@ -27,6 +27,45 @@ export default function EmployeeList() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
+  // 🔹 Helper: build full name
+  const getFullName = (emp: EmployeeView) => {
+    const raw = (emp as any).raw ?? {};
+
+    // 1) Prefer fullName coming from backend
+    const fullFromServer = (
+      raw.fullName ??
+      raw.FullName ??
+      raw.Name ??
+      raw.name ??
+      ""
+    )
+      .toString()
+      .trim();
+    if (fullFromServer) return fullFromServer;
+
+    // 2) Then first + last if present
+    const fromParts = `${emp.firstName ?? ""} ${emp.lastName ?? ""}`
+      .trim();
+    if (fromParts) return fromParts;
+
+    // 3) Then mapped name
+    if (emp.name && emp.name.trim()) return emp.name.trim();
+
+    // 4) Then email username
+    if (emp.email && emp.email.includes("@")) {
+      return emp.email.split("@")[0];
+    }
+
+    // 5) Last fallback
+    return `Employee ${emp.id}`;
+  };
+
+  // 🔹 Helper: initial letter for avatar
+  const getInitial = (emp: EmployeeView) => {
+    const full = getFullName(emp) || emp.email || "";
+    return full.trim().charAt(0).toUpperCase() || "?";
+  };
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -49,8 +88,10 @@ export default function EmployeeList() {
     if (!s) return employees;
 
     return employees.filter((emp) => {
+      const fullName = getFullName(emp).toLowerCase();
+
       const idMatch = emp.id?.toString().includes(s);
-      const nameMatch = emp.name.toLowerCase().includes(s);
+      const nameMatch = fullName.includes(s);
       const emailMatch = (emp.email ?? "").toLowerCase().includes(s);
       const phoneMatch = (emp.phone ?? "").toLowerCase().includes(s);
       const deptMatch = (emp.departmentName ?? "").toLowerCase().includes(s);
@@ -77,6 +118,9 @@ export default function EmployeeList() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, currentPage, pageSize]);
 
+  const totalEmployees = employees.length;
+  const totalMatching = filtered.length;
+
   const openCreate = () => {
     setShowCreateModal(true);
   };
@@ -95,21 +139,32 @@ export default function EmployeeList() {
 
   const handleCreateSave = async (payload: any) => {
     try {
-      const created = await createEmployee(payload);
+      // build a proper full name from first + last
+      const fullName = `${payload?.firstName ?? ""} ${
+        payload?.lastName ?? ""
+      }`.trim();
+
+      // send 'name' explicitly so backend doesn't derive it from email
+      const apiPayload = {
+        ...payload,
+        name: fullName || undefined,
+      };
+
+      const created = await createEmployee(apiPayload);
 
       if (created && created.id) setEmployees((prev) => [created, ...prev]);
       else await load();
 
       setShowCreateModal(false);
 
-       const rawFirstName: string =
-      payload?.firstName ??
-      created?.firstName ??
-      created?.name?.toString().split(" ")[0] ??
-      "";
+      const rawFirstName: string =
+        payload?.firstName ??
+        created?.firstName ??
+        created?.name?.toString().split(" ")[0] ??
+        "";
 
-    const firstName = rawFirstName.trim() || "Employee";
-    const password = `${firstName}@123`;
+      const firstName = rawFirstName.trim() || "Employee";
+      const password = `${firstName}@123`;
 
       toast.success(
         `Employee added successfully. Please share the password "${password}" with them.`
@@ -148,14 +203,17 @@ export default function EmployeeList() {
     }
   };
 
-  const getInitial = (name?: string) =>
-    (name ?? "?").trim().charAt(0).toUpperCase() || "?";
-
   return (
     <main className="page-wrap table-page">
       <div className="toolbar">
         <h2>Employees</h2>
         <div className="toolbar-right">
+          <span className="count-pill">
+            {q
+              ? `${totalMatching} / ${totalEmployees} employees`
+              : `${totalEmployees} employees`}
+          </span>
+
           <input
             className="search"
             placeholder="Search employees..."
@@ -187,10 +245,12 @@ export default function EmployeeList() {
                 <div className="employee-card" key={emp.id}>
                   <div className="employee-card-header">
                     <div className="employee-avatar">
-                      {getInitial(emp.name)}
+                      {getInitial(emp)}
                     </div>
                     <div className="employee-header-text">
-                      <span className="employee-name">{emp.name}</span>
+                      <span className="employee-name">
+                        {getFullName(emp)}
+                      </span>
                       <span className="employee-role">
                         {emp.jobRole ?? "SDE"}
                       </span>
@@ -298,5 +358,4 @@ export default function EmployeeList() {
       )}
     </main>
   );
-
 }
