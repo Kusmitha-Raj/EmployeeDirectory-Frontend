@@ -27,5 +27,5 @@
     "allowSyntheticDefaultImports": true
   
   },
-  "include": ["src"]
+  "include": ["src", "tests/EmployeeList.test.tsx", "tsconfig.jest.json"]
 }

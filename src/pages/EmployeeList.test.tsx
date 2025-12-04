@@ -36,7 +36,8 @@ describe("EmployeeList page", () => {
     expect(await screen.findByText("k@test.com")).toBeInTheDocument();
     expect(screen.getByText("j@test.com")).toBeInTheDocument();
 
-    expect(screen.getByText(/it/i)).toBeInTheDocument();
+    expect(screen.getByText("IT")).toBeInTheDocument();
+
 // old: expect(screen.getByText(/hr/i)).toBeInTheDocument();
     expect(screen.getByText("HR")).toBeInTheDocument(); // ✅ exact department text
 
